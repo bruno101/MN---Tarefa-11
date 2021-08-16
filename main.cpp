@@ -28,70 +28,116 @@ tuple <double, vector<double>> potReg(double n, vector<vector<double>> A, vector
     }
     size = pow(size,0.5);
     for (int i = 0; i < n; i++) {
-      vVelho[i] /= size;
+      xVelho[i] = vVelho[i]/size;
     }
     for (int i = 0; i < n; i++) {
       vNovo[i] = 0;
       for (int j = 0; j < n; j++) {
-        vNovo[i] += A[i][j]*vVelho[j];
+        vNovo[i] += A[i][j]*xVelho[j];
       }
     }
     lambdaNovo = 0;
     for (int i = 0; i < n; i++) {
-      lambdaNovo += vVelho[i]*vNovo[i];
+      lambdaNovo += xVelho[i]*vNovo[i];
     }
     erro = abs((lambdaNovo-lambdaVelho)/lambdaNovo);
 
   }
 
-  return make_tuple(lambdaNovo, vNovo);
+  return make_tuple(lambdaNovo, xVelho);
 
 }
 
-vector<vector<double>> calculaInversa (double n, vector<vector<double>> A) {
+tuple <vector<vector<double>>, vector<vector<double>>> decompLU (double n, vector<vector<double>> A) {
 
-  vector<vector<double>> X (n, vector<double>(n));
+  vector<vector<double>> L(n, vector<double>(n)), U(n, vector<double>(n));
+  double S;
 
-  for (int i = 0; i <= n-1; i++) {
-    X[i][i] = 1;
-  }
+  for (int j = 0; j < n; j++) {
 
-  for (int k = 0; k <= n-1; k++) {
-
-    for (int j = k+1; j <= n-1; j++) {
-      X[k][j] = X[k][j]/A[k][k];
-      A[k][j] = A[k][j]/A[k][k];
-    }
-    for (int j = 0; j <= k-1; j++) {
-      X[k][j] = X[k][j]/A[k][k];
-    }
-
-    X[k][k] = X[k][k]/A[k][k];
-    A[k][k] = 1;
-
-    for (int i = 0; i <= n-1; i++) {
-      if (i != k) {
-        for (int j = k+1; j <= n-1; j++) {
-          X[i][j] -= A[i][k]*X[k][j];
-          A[i][j] -= A[i][k]*A[k][j];
-        }
-        for (int j = 0; j <= k-1; j++) {
-          X[i][j] -= A[i][k]*X[k][j];
-        }
-        X[i][k] -= A[i][k]*X[k][k];
-        A[i][k] = 0;
+    for (int i = 0; i <= j; i++) {
+      U[i][j] = A[i][j];
+      for (int k = 0; k < i; k++) {
+        U[i][j] -= L[i][k]*U[k][j];
       }
     }
+
+    for (int i = j+1; i < n; i++) {
+      U[i][j] = A[i][j];
+      for (int k = 0; k < j; k++) {
+        U[i][j] -= L[i][k]*U[k][j];
+      }
+      U[i][j] /= U[j][j];
+    }
+
   }
 
-  return X;
+  return make_tuple(L, U);
 
 }
 
+vector<double> LUsolver (double n, vector<vector<double>> L, vector<vector<double>> U, vector<double> b) {
+
+  vector<double> x(n), y(n);
+
+  for (int i = 0; i < n; i++) {
+    y[i] = b[i];
+    for (int k = 0; k < i; k++) {
+      y[i] -= L[i][k]*y[k];
+    }
+  }
+
+  for (int i = n-1; i >= 0 ; i--) {
+    x[i] = y[i];
+    for (int k = i+1; k < n; k++) {
+      x[i] -= L[i][k]*x[k];
+    }
+    x[i] /= U[i][i];
+  }
+
+  return x;
+
+}
+
+
 tuple <double, vector<double>> invPower(double n, vector<vector<double>> A, vector<double> v0, double epsilon) {
-  vector<vector<double>> invA = calculaInversa(n, A);
-  auto res = potReg(n, invA, v0, epsilon);
-  return make_tuple(1.0/get<0>(res), get<1>(res));
+
+  auto LU = decompLU(n, A);
+
+  double lambdaNovo = 0;
+  double lambdaVelho;
+  vector<double> vNovo(n);
+  vector<double> vVelho(n);
+  vector<double> xVelho(n);
+  double erro = epsilon+1;
+
+  for (int i = 0; i < n; i++) {
+    vNovo[i] = v0[i];
+  }
+
+  while (erro > epsilon) {
+
+    lambdaVelho = lambdaNovo;
+    double size = 0;
+    for (int i = 0; i < n; i++) {
+      vVelho[i] = vNovo[i];
+      size += vVelho[i]*vVelho[i];
+    }
+    size = pow(size,0.5);
+    for (int i = 0; i < n; i++) {
+      xVelho[i] = vVelho[i]/size;
+    }
+    vNovo = LUsolver(n, get<0>(LU), get<1>(LU), xVelho);
+    lambdaNovo = 0;
+    for (int i = 0; i < n; i++) {
+      lambdaNovo += xVelho[i]*vNovo[i];
+    }
+    erro = abs((lambdaNovo-lambdaVelho)/lambdaNovo);
+
+  }
+
+  return make_tuple(1.0/lambdaNovo, xVelho);
+
 }
 
 tuple <double, vector<double>> shiftedPower(double n, vector<vector<double>> A, vector<double> v0, double epsilon, double mu) {
@@ -148,7 +194,7 @@ int main() {
 
     auto res = invPower(n, A, v0, epsilon);
 
-    cout << "Autovalor dominante: " << get<0>(res) << "\nAutovetor correspondente: (";
+    cout << "Autovalor: " << get<0>(res) << "\nAutovetor correspondente: (";
     for (int i = 0; i < n; i++) {
       cout << get<1>(res)[i] << ", ";
     }
@@ -162,7 +208,7 @@ int main() {
 
     auto res = shiftedPower(n, A, v0, epsilon, mu);
 
-    cout << "Autovalor dominante: " << get<0>(res) << "\nAutovetor correspondente: (";
+    cout << "Autovalor: " << get<0>(res) << "\nAutovetor correspondente: (";
     for (int i = 0; i < n; i++) {
       cout << get<1>(res)[i] << ", ";
     }
