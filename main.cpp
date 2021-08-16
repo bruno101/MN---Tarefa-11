@@ -62,12 +62,13 @@ tuple <vector<vector<double>>, vector<vector<double>>> decompLU (double n, vecto
       }
     }
 
+    L[j][j] = 1;
     for (int i = j+1; i < n; i++) {
-      U[i][j] = A[i][j];
+      L[i][j] = A[i][j];
       for (int k = 0; k < j; k++) {
-        U[i][j] -= L[i][k]*U[k][j];
+        L[i][j] -= L[i][k]*U[k][j];
       }
-      U[i][j] /= U[j][j];
+      L[i][j] /= U[j][j];
     }
 
   }
@@ -90,7 +91,7 @@ vector<double> LUsolver (double n, vector<vector<double>> L, vector<vector<doubl
   for (int i = n-1; i >= 0 ; i--) {
     x[i] = y[i];
     for (int k = i+1; k < n; k++) {
-      x[i] -= L[i][k]*x[k];
+      x[i] -= U[i][k]*x[k];
     }
     x[i] /= U[i][i];
   }
@@ -176,6 +177,8 @@ int main() {
   cout << "Digite o valor da precisão desejada: ";
   cin >> epsilon;
 
+  while (1) {
+
   int e;
   cout << "Escolha o método a ser utilizado:\n1 - Método da potência regular \n2 - Inverse Power Method\n3 - Shifted Power Method\n";
   cin >> e;
@@ -213,6 +216,16 @@ int main() {
       cout << get<1>(res)[i] << ", ";
     }
     cout << "\b\b)";
+
+  }
+
+  int e1;
+  cout << "\n\nVocê deseja continuar?\n1 - Sim\n2 - Não\n";
+  cin >> e1;
+  if (e1 == 2) {
+    break;
+  }
+  cout << "\n";
 
   }
 
