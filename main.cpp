@@ -151,6 +151,70 @@ tuple <double, vector<double>> shiftedPower(double n, vector<vector<double>> A, 
 
 }
 
+tuple<vector<double>, vector<vector<double>>> shifterPowerMultipleValues(double n, vector<vector<double>> A, vector<double> v0, double epsilon, int s) {
+
+  vector<double> autovalores;
+  vector<vector<double>> autovetores;
+
+  auto menorSol = invPower(n, A, v0, epsilon);
+  double menorAutovalor = get<0>(menorSol);
+  auto maiorSol = potReg(n, A, v0, epsilon);
+  double maiorAutovalor = get<0>(maiorSol);
+
+  if (abs(maiorAutovalor - menorAutovalor) < 0.0001) {
+    autovalores.push_back(get<0>(menorSol));
+    autovetores.push_back(get<1>(menorSol));
+    return make_tuple(autovalores, autovetores);
+  }
+  if (abs(maiorAutovalor + menorAutovalor) < 0.0001) {
+    autovalores.push_back(get<0>(menorSol));
+    autovetores.push_back(get<1>(menorSol));
+    autovalores.push_back(get<0>(maiorSol));
+    autovetores.push_back(get<1>(maiorSol));
+    return make_tuple(autovalores, autovetores);
+  }
+
+  double intervalo = (abs(maiorAutovalor)-abs(menorAutovalor))/s;
+  //autovalores negativos
+  double mu = -abs(maiorAutovalor)-intervalo;
+  double autovalorAnterior = -abs(maiorAutovalor)-1000;
+  while (1) {
+
+    mu += intervalo;
+    auto sol = shiftedPower(n, A, v0, epsilon, mu);
+    if (get<0>(sol) - autovalorAnterior > 0.0001) {
+      autovalores.push_back(get<0>(sol));
+      autovetores.push_back(get<1>(sol));
+      autovalorAnterior = get<0>(sol);
+    }
+
+    if (mu > -abs(menorAutovalor)) {
+      break;
+    }
+
+  }
+  //autovalores positivos
+  mu = max(abs(menorAutovalor)-intervalo, mu);
+  while (1) {
+
+    mu += intervalo;
+    auto sol = shiftedPower(n, A, v0, epsilon, mu);
+    if (get<0>(sol) - autovalorAnterior > 0.0001) {
+      autovalores.push_back(get<0>(sol));
+      autovetores.push_back(get<1>(sol));
+      autovalorAnterior = get<0>(sol);
+    }
+
+    if (mu > abs(maiorAutovalor)) {
+      break;
+    }
+
+  }
+
+  return make_tuple(autovalores, autovetores);
+
+} 
+
 
 
 int main() {
@@ -180,7 +244,7 @@ int main() {
   while (1) {
 
   int e;
-  cout << "Escolha o método a ser utilizado:\n1 - Método da potência regular \n2 - Inverse Power Method\n3 - Shifted Power Method\n";
+  cout << "Escolha o método a ser utilizado:\n1 - Método da potência regular \n2 - Inverse Power Method\n3 - Shifted Power Method (encontrar autovalor próximo a um valor específico)\n4 - Shifted Power Method (encontrar múltiplos autovalores)\n";
   cin >> e;
 
   if (e == 1) {
@@ -203,7 +267,7 @@ int main() {
     }
     cout << "\b\b)";
 
-  } else {
+  } else if (e == 3) {
 
     double mu;
     cout << "Escolha o número do qual o autovalor deve estar mais próximo:";
@@ -216,6 +280,25 @@ int main() {
       cout << get<1>(res)[i] << ", ";
     }
     cout << "\b\b)";
+
+  } else {
+
+    int s;
+    cout << "Escolha o número de partes em que se deve dividir os intervalos: ";
+    cin >> s;
+    cout << "\n";
+    auto res = shifterPowerMultipleValues(n, A, v0, epsilon, s);
+
+    vector<double> autovalores = get<0>(res);
+    vector<vector<double>> autovetores = get<1>(res);
+    cout << "Pares de autovalores e autovetores encontrados:\n";
+    for (int i = 0; i < size(autovalores); i++) {
+      cout << autovalores[i] << ", (";
+      for (int j = 0; j < n; j++) {
+        cout << autovetores[i][j] << ", ";
+      }
+      cout << "\b\b)\n";
+    }
 
   }
 
