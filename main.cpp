@@ -40,7 +40,15 @@ tuple <double, vector<double>> potReg(double n, vector<vector<double>> A, vector
     for (int i = 0; i < n; i++) {
       lambdaNovo += xVelho[i]*vNovo[i];
     }
+
     erro = abs((lambdaNovo-lambdaVelho)/lambdaNovo);
+    if (lambdaNovo == 0) {
+      if (abs(lambdaNovo-lambdaVelho) < erro) {
+        erro = 0;
+      } else {
+        erro = epsilon+1;
+      }
+    }
 
   }
 
@@ -63,6 +71,7 @@ tuple <vector<vector<double>>, vector<vector<double>>> decompLU (double n, vecto
     }
 
     L[j][j] = 1;
+
     for (int i = j+1; i < n; i++) {
       L[i][j] = A[i][j];
       for (int k = 0; k < j; k++) {
@@ -133,7 +142,15 @@ tuple <double, vector<double>> invPower(double n, vector<vector<double>> A, vect
     for (int i = 0; i < n; i++) {
       lambdaNovo += xVelho[i]*vNovo[i];
     }
+
     erro = abs((lambdaNovo-lambdaVelho)/lambdaNovo);
+    if (lambdaNovo == 0) {
+      if (abs(lambdaNovo-lambdaVelho) < erro) {
+        erro = 0;
+      } else {
+        erro = epsilon+1;
+      }
+    }
 
   }
 
