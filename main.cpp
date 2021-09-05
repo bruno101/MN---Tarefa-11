@@ -161,6 +161,14 @@ tuple<vector<double>, vector<vector<double>>> shifterPowerMultipleValues(double 
   auto maiorSol = potReg(n, A, v0, epsilon);
   double maiorAutovalor = get<0>(maiorSol);
 
+  if (maiorAutovalor != maiorAutovalor) {
+    cout << "Potência regular retornou nan.\n";
+    return make_tuple(autovalores, autovetores);
+  } else if (menorAutovalor != menorAutovalor) {
+    cout << "Potência inversa retornou nan.\n";
+    return make_tuple(autovalores, autovetores);
+  }
+
   if (abs(maiorAutovalor - menorAutovalor) < 0.0001) {
     autovalores.push_back(get<0>(menorSol));
     autovetores.push_back(get<1>(menorSol));
